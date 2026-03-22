@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Bitcoin Tracker</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+–bg: #f2f2f7;
+–card: rgba(255,255,255,0.88);
+–border: rgba(0,0,0,0.08);
+–text-primary: #1c1c1e;
+–text-secondary: #6e6e73;
+–accent: #f7931a;
+–accent-light: rgba(247,147,26,0.12);
+–green: #30d158;
+–green-bg: rgba(48,209,88,0.12);
+–red: #ff453a;
+–red-bg: rgba(255,69,58,0.12);
+–shadow: 0 2px 20px rgba(0,0,0,0.07);
+–radius: 18px;
+–radius-sm: 12px;
+}
+
+- { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+body {
+font-family: ‘Nunito’, -apple-system, BlinkMacSystemFont, sans-serif;
+background: var(–bg);
+min-height: 100vh;
+overflow-x: hidden;
+}
+
+body::before {
+content: ‘’;
+position: fixed;
+inset: 0;
+background: radial-gradient(ellipse 80% 50% at 20% -10%, rgba(247,147,26,0.09) 0%, transparent 60%),
+radial-gradient(ellipse 60% 40% at 80% 110%, rgba(48,209,88,0.06) 0%, transparent 60%);
+pointer-events: none;
+z-index: 0;
+}
+
+.container {
+max-width: 900px;
+margin: 0 auto;
+padding: max(24px, env(safe-area-inset-top, 0px)) 16px 40px;
+position: relative;
+}
+
+/* HEADER */
+header {
+display: flex;
+align-items: center;
+justify-content: space-between;
+margin-bottom: 16px;
+background: linear-gradient(135deg, #f7931a 0%, #e8720c 100%);
+border-radius: var(–radius);
+padding: 18px 20px;
+box-shadow: 0 4px 20px rgba(247,147,26,0.28);
+animation: fadeUp 0.4s ease both;
+}
+
+h1 {
+font-size: clamp(1.3rem, 4vw, 1.7rem);
+font-weight: 800;
+letter-spacing: -0.5px;
+color: white;
+text-shadow: 0 1px 6px rgba(0,0,0,0.15);
+}
+
+.btc-icon { font-size: 1.5rem; margin-right: 8px; }
+
+.last-updated {
+font-size: 0.75rem;
+color: rgba(255,255,255,0.75);
+margin-top: 3px;
+}
+
+/* CURRENCY TABS */
+.cur-tabs {
+display: flex;
+gap: 5px;
+background: rgba(0,0,0,0.15);
+border-radius: 12px;
+padding: 5px;
+}
+
+.cur-btn {
+background: none;
+border: none;
+padding: 7px 13px;
+border-radius: 8px;
+font-family: inherit;
+font-size: 0.8rem;
+font-weight: 700;
+color: rgba(255,255,255,0.7);
+cursor: pointer;
+transition: background 0.18s, color 0.15s, transform 0.1s, box-shadow 0.15s;
+display: flex;
+align-items: center;
+gap: 5px;
+white-space: nowrap;
+}
+
+.cur-btn:hover { color: white; }
+
+.cur-btn.active {
+background: white;
+color: var(–accent);
+box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+transform: scale(1.04);
+}
+
+/* PRICE CARD */
+.price-card {
+background: linear-gradient(135deg, #f7931a 0%, #e8720c 100%);
+border-radius: var(–radius);
+padding: 28px 24px;
+margin-bottom: 16px;
+position: relative;
+overflow: hidden;
+animation: fadeUp 0.4s ease 0.05s both;
+box-shadow: 0 8px 32px rgba(247,147,26,0.35);
+}
+
+.price-card::before {
+content: ‘₿’;
+position: absolute;
+right: 60px;
+top: 50%;
+transform: translateY(-50%) rotate(-8deg);
+font-size: 180px;
+opacity: 0.08;
+color: white;
+font-weight: 900;
+pointer-events: none;
+user-select: none;
+line-height: 1;
+}
+
+.price-label {
+font-size: 0.7rem;
+font-weight: 700;
+letter-spacing: 1.5px;
+text-transform: uppercase;
+color: rgba(255,255,255,0.75);
+margin-bottom: 8px;
+}
+
+.price-main {
+font-size: clamp(2.2rem, 7vw, 3.4rem);
+font-weight: 800;
+color: white;
+letter-spacing: -1px;
+line-height: 1;
+margin-bottom: 10px;
+text-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.price-shimmer {
+background: linear-gradient(90deg, rgba(255,255,255,0.1), rgba(255,255,255,0.25), rgba(255,255,255,0.1));
+background-size: 200% 100%;
+animation: shimmer 1.5s infinite;
+border-radius: 8px;
+height: 48px;
+width: 200px;
+}
+
+@keyframes shimmer { to { background-position: -200% 0; } }
+
+.change-badge {
+display: inline-flex;
+align-items: center;
+gap: 5px;
+padding: 6px 14px;
+border-radius: 20px;
+font-size: 0.88rem;
+font-weight: 700;
+}
+
+.change-badge.up   { background: rgba(255,255,255,0.22); color: white; }
+.change-badge.down { background: rgba(0,0,0,0.15); color: rgba(255,255,255,0.9); }
+.change-badge.flat { background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.8); }
+
+.refresh-btn {
+position: absolute;
+right: 20px;
+bottom: 20px;
+background: rgba(255,255,255,0.25);
+border: none;
+border-radius: 50%;
+width: 38px;
+height: 38px;
+display: flex;
+align-items: center;
+justify-content: center;
+cursor: pointer;
+transition: background 0.2s;
+font-size: 1rem;
+color: white;
+}
+
+.refresh-btn:hover { background: rgba(255,255,255,0.38); }
+.refresh-btn.spinning { animation: spin 0.65s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* META */
+.meta-grid {
+display: grid;
+grid-template-columns: 1fr 1fr;
+gap: 10px;
+margin-bottom: 16px;
+animation: fadeUp 0.4s ease 0.1s both;
+}
+
+@media (min-width: 480px) {
+.meta-grid { grid-template-columns: repeat(4, 1fr); }
+}
+
+.meta-card {
+background: var(–card);
+border-radius: var(–radius-sm);
+padding: 14px 16px;
+box-shadow: var(–shadow);
+backdrop-filter: blur(12px);
+}
+
+.meta-label {
+font-size: 0.7rem;
+font-weight: 700;
+letter-spacing: 0.8px;
+text-transform: uppercase;
+color: var(–text-secondary);
+margin-bottom: 5px;
+}
+
+.meta-value {
+font-size: 0.95rem;
+font-weight: 700;
+color: var(–text-primary);
+}
+
+/* SPARKLINE */
+.spark-card {
+background: var(–card);
+border-radius: var(–radius);
+padding: 20px;
+margin-bottom: 16px;
+box-shadow: var(–shadow);
+animation: fadeUp 0.4s ease 0.15s both;
+}
+
+.spark-card canvas { width: 100%; height: 80px; display: block; }
+
+.spark-label {
+font-size: 0.78rem;
+font-weight: 600;
+color: var(–text-secondary);
+margin-bottom: 10px;
+}
+
+/* PORTFOLIO */
+.section-title {
+font-size: 1.05rem;
+font-weight: 800;
+color: var(–text-primary);
+margin-bottom: 12px;
+}
+
+.portfolio-card {
+background: var(–card);
+border-radius: var(–radius);
+padding: 20px;
+margin-bottom: 16px;
+box-shadow: var(–shadow);
+animation: fadeUp 0.4s ease 0.2s both;
+}
+
+.inputs-row {
+display: grid;
+grid-template-columns: 1fr 1fr;
+gap: 10px;
+margin-bottom: 12px;
+}
+
+input, textarea {
+background: var(–bg);
+border: 1.5px solid var(–border);
+border-radius: var(–radius-sm);
+padding: 11px 14px;
+font-family: inherit;
+font-size: 0.9rem;
+font-weight: 600;
+color: var(–text-primary);
+width: 100%;
+outline: none;
+transition: border-color 0.18s;
+}
+
+input:focus, textarea:focus { border-color: var(–accent); }
+input::placeholder, textarea::placeholder { color: var(–text-secondary); opacity: 0.6; font-weight: 500; }
+
+.save-btn {
+background: var(–accent);
+border: none;
+border-radius: var(–radius-sm);
+padding: 12px 20px;
+color: white;
+font-family: inherit;
+font-weight: 700;
+font-size: 0.9rem;
+cursor: pointer;
+width: 100%;
+transition: opacity 0.2s, transform 0.15s;
+margin-bottom: 14px;
+}
+
+.save-btn:hover { opacity: 0.9; }
+.save-btn:active { transform: scale(0.97); }
+
+.pnl-box {
+background: var(–bg);
+border-radius: var(–radius-sm);
+padding: 14px 16px;
+display: none;
+}
+
+.pnl-box.profit { background: var(–green-bg); }
+.pnl-box.loss   { background: var(–red-bg); }
+
+.pnl-label {
+font-size: 0.72rem;
+font-weight: 700;
+letter-spacing: 0.8px;
+text-transform: uppercase;
+color: var(–text-secondary);
+margin-bottom: 4px;
+}
+
+.pnl-value { font-size: 1.3rem; font-weight: 800; }
+.pnl-box.profit .pnl-value { color: var(–green); }
+.pnl-box.loss   .pnl-value { color: var(–red); }
+
+/* ALERTS */
+.alerts-card {
+background: var(–card);
+border-radius: var(–radius);
+padding: 20px;
+margin-bottom: 16px;
+box-shadow: var(–shadow);
+animation: fadeUp 0.4s ease 0.25s both;
+}
+
+.alert-row { display: flex; gap: 8px; margin-bottom: 12px; }
+.alert-row input { flex: 1; }
+
+.add-alert-btn {
+background: var(–accent-light);
+border: none;
+border-radius: var(–radius-sm);
+padding: 11px 16px;
+color: var(–accent);
+font-family: inherit;
+font-weight: 700;
+font-size: 0.9rem;
+cursor: pointer;
+white-space: nowrap;
+transition: background 0.18s;
+}
+
+.add-alert-btn:hover { background: rgba(247,147,26,0.2); }
+
+.alerts-list { display: flex; flex-direction: column; gap: 8px; }
+
+.alert-item {
+display: flex;
+align-items: center;
+justify-content: space-between;
+background: var(–bg);
+border-radius: 10px;
+padding: 10px 14px;
+}
+
+.alert-price { font-weight: 700; font-size: 0.92rem; }
+.alert-dir { font-size: 0.75rem; color: var(–text-secondary); margin-left: 6px; }
+.alert-triggered { color: var(–green); font-size: 0.75rem; font-weight: 700; }
+
+.delete-btn {
+background: none;
+border: none;
+cursor: pointer;
+color: var(–text-secondary);
+font-size: 1rem;
+padding: 2px 6px;
+border-radius: 6px;
+transition: background 0.15s, color 0.15s;
+}
+
+.delete-btn:hover { background: var(–red-bg); color: var(–red); }
+.empty-state { text-align: center; padding: 20px; color: var(–text-secondary); font-size: 0.85rem; }
+
+/* NOTES */
+.notes-card {
+background: var(–card);
+border-radius: var(–radius);
+padding: 20px;
+margin-bottom: 16px;
+box-shadow: var(–shadow);
+animation: fadeUp 0.4s ease 0.3s both;
+}
+
+textarea { resize: none; min-height: 90px; }
+
+@keyframes fadeUp {
+from { opacity: 0; transform: translateY(16px); }
+to   { opacity: 1; transform: translateY(0); }
+}
+</style>
+
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div>
+      <h1><span class="btc-icon">₿</span>Bitcoin Tracker</h1>
+      <div class="last-updated" id="last-updated">Načítám…</div>
+    </div>
+    <div class="cur-tabs">
+      <button class="cur-btn" data-cur="CZK" onclick="setCur(this)">🇨🇿 CZK</button>
+      <button class="cur-btn" data-cur="EUR" onclick="setCur(this)">🇪🇺 EUR</button>
+      <button class="cur-btn" data-cur="USD" onclick="setCur(this)">🇺🇸 USD</button>
+    </div>
+  </header>
+
+  <div class="price-card">
+    <div class="price-label" id="price-label">AKTUÁLNÍ CENA BTC / USD</div>
+    <div class="price-main" id="price-main"><div class="price-shimmer"></div></div>
+    <div id="change-badge"></div>
+    <button class="refresh-btn" id="refresh-btn" onclick="loadPrice()" title="Obnovit">↻</button>
+  </div>
+
+  <div class="meta-grid">
+    <div class="meta-card"><div class="meta-label">24h High</div><div class="meta-value" id="meta-high">—</div></div>
+    <div class="meta-card"><div class="meta-label">24h Low</div><div class="meta-value" id="meta-low">—</div></div>
+    <div class="meta-card"><div class="meta-label">Market Cap</div><div class="meta-value" id="meta-cap">—</div></div>
+    <div class="meta-card"><div class="meta-label">Volume 24h</div><div class="meta-value" id="meta-vol">—</div></div>
+  </div>
+
+  <div class="spark-card">
+    <div class="spark-label">📈 Cenový vývoj — posledních 7 dní</div>
+    <canvas id="spark"></canvas>
+  </div>
+
+  <div class="portfolio-card">
+    <div class="section-title">💼 Moje Portfolio</div>
+    <div class="inputs-row">
+      <input type="number" id="amount" placeholder="Množství BTC" step="0.0001" min="0">
+      <input type="number" id="buy-price" placeholder="Nákupní cena (USD)" step="1" min="0">
+    </div>
+    <button class="save-btn" onclick="savePortfolio()">Uložit & spočítat P&L</button>
+    <div class="pnl-box" id="pnl">
+      <div class="pnl-label">P&L</div>
+      <div class="pnl-value" id="pnl-val">—</div>
+    </div>
+  </div>
+
+  <div class="alerts-card">
+    <div class="section-title">🔔 Cenové alarmy</div>
+    <div class="alert-row">
+      <input type="number" id="alert-input" placeholder="Zadejte cenu v USD" step="100">
+      <button class="add-alert-btn" onclick="addAlert()">+ Přidat</button>
+    </div>
+    <div class="alerts-list" id="alerts-list"><div class="empty-state">Žádné alarmy</div></div>
+  </div>
+
+  <div class="notes-card">
+    <div class="section-title">📝 Poznámky</div>
+    <textarea id="notes" placeholder="Strategie, nápady, záznamy…" oninput="saveNotes()"></textarea>
+  </div>
+
+</div>
+<script>
+// ── Storage (localStorage s fallbackem) ──────────────────────────
+const S = {
+  get: k => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
+  set: (k,v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
+};
+
+// ── State ────────────────────────────────────────────────────────
+let cur    = S.get(‘cur’) || ‘USD’;
+let rates  = { USD: 1, EUR: 0.92, CZK: 23.5 };
+let priceUSD = 0, mcap = 0, vol = 0, high24 = 0, low24 = 0;
+let spark7d  = [];
+let alerts   = S.get(‘alerts’) || [];
+
+// ── Formatovani ──────────────────────────────────────────────────
+const fmtDate = new Intl.DateTimeFormat(‘cs-CZ’, { weekday:‘long’, day:‘numeric’, month:‘long’ });
+const fmtTime = new Intl.DateTimeFormat(‘cs-CZ’, { hour:‘2-digit’, minute:‘2-digit’ });
+
+function rate() {
+return cur === ‘CZK’ ? rates.CZK : cur === ‘EUR’ ? rates.EUR : 1;
+}
+
+function fmtPrice(usd) {
+const v = usd * rate();
+if (cur === ‘CZK’) return v.toLocaleString(‘cs-CZ’, { maximumFractionDigits: 0 }) + ’ Kč’;
+if (cur === ‘EUR’) return ‘€’ + v.toLocaleString(‘en-US’, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+return ‘$’ + v.toLocaleString(‘en-US’, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+}
+
+function fmtBig(usd) {
+const v = usd * rate();
+if (v >= 1e12) return (v/1e12).toFixed(2) + ’ bil.’;
+if (v >= 1e9)  return (v/1e9).toFixed(2)  + ’ mld.’;
+if (v >= 1e6)  return (v/1e6).toFixed(2)  + ’ mil.’;
+return v.toLocaleString(‘cs-CZ’);
+}
+
+// ── Přepínání měn ────────────────────────────────────────────────
+function syncTabs() {
+document.querySelectorAll(’.cur-btn’).forEach(b => {
+b.classList.toggle(‘active’, b.dataset.cur === cur);
+});
+document.getElementById(‘price-label’).textContent = `AKTUÁLNÍ CENA BTC / ${cur}`;
+}
+
+function setCur(btn) {
+cur = btn.dataset.cur;
+S.set(‘cur’, cur);
+syncTabs();
+render();
+}
+
+// ── Pomocná funkce — zkusí přímý fetch, při chybě použije proxy ──
+async function safeFetch(url) {
+try {
+const r = await fetch(url, { mode: ‘cors’ });
+if (r.ok) return r.json();
+throw new Error(‘not ok’);
+} catch {
+// Záložní CORS proxy pro případ file:// nebo blokování
+const proxy = ‘https://corsproxy.io/?’ + encodeURIComponent(url);
+const r2 = await fetch(proxy);
+return r2.json();
+}
+}
+
+// ── Kurzy ────────────────────────────────────────────────────────
+async function fetchRates() {
+try {
+const d = await safeFetch(‘https://api.exchangerate-api.com/v4/latest/USD’);
+rates.EUR = d.rates.EUR || 0.92;
+rates.CZK = d.rates.CZK || 23.5;
+} catch {}
+}
+
+// ── Cena (Binance) ───────────────────────────────────────────────
+async function loadPrice() {
+const btn = document.getElementById(‘refresh-btn’);
+btn.classList.add(‘spinning’);
+try {
+const [tick, tick24] = await Promise.all([
+safeFetch(‘https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT’),
+safeFetch(‘https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT’)
+]);
+priceUSD = parseFloat(tick.price)                || 0;
+high24   = parseFloat(tick24.highPrice)          || 0;
+low24    = parseFloat(tick24.lowPrice)           || 0;
+vol      = parseFloat(tick24.quoteVolume)        || 0;
+const ch = parseFloat(tick24.priceChangePercent) || 0;
+
+```
+try {
+  const cc = await safeFetch('https://api.coincap.io/v2/assets/bitcoin');
+  mcap = parseFloat(cc.data?.marketCapUsd) || 0;
+} catch { mcap = 0; }
+
+render(ch);
+checkAlerts();
+document.getElementById('last-updated').textContent =
+  `Aktualizováno ${fmtDate.format(new Date())}, ${fmtTime.format(new Date())}`;
+```
+
+} catch {
+document.getElementById(‘price-main’).textContent = ‘Chyba načítání’;
+document.getElementById(‘last-updated’).textContent = ‘Nepodařilo se načíst. Zkus obnovit.’;
+}
+btn.classList.remove(‘spinning’);
+}
+
+// ── Graf (Binance klines) ────────────────────────────────────────
+async function loadSpark() {
+try {
+const d = await safeFetch(‘https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1d&limit=8’);
+spark7d = d.map(k => parseFloat(k[4]));
+drawSpark();
+} catch {}
+}
+
+// ── Render ───────────────────────────────────────────────────────
+function render(ch) {
+document.getElementById(‘price-main’).textContent = fmtPrice(priceUSD);
+document.getElementById(‘meta-high’).textContent  = fmtPrice(high24);
+document.getElementById(‘meta-low’).textContent   = fmtPrice(low24);
+document.getElementById(‘meta-cap’).textContent   = fmtBig(mcap);
+document.getElementById(‘meta-vol’).textContent   = fmtBig(vol);
+syncTabs(); // label se taky zaktualizuje
+
+if (ch !== undefined) {
+const cls   = ch > 0.2 ? ‘up’ : ch < -0.2 ? ‘down’ : ‘flat’;
+const arrow = ch > 0.2 ? ‘▲’ : ch < -0.2 ? ‘▼’ : ‘—’;
+document.getElementById(‘change-badge’).innerHTML =
+`<span class="change-badge ${cls}">${arrow} ${Math.abs(ch).toFixed(2)}% dnes</span>`;
+}
+calcPnl();
+}
+
+// ── Sparkline canvas ─────────────────────────────────────────────
+function drawSpark() {
+const canvas = document.getElementById(‘spark’);
+const dpr = window.devicePixelRatio || 1;
+const w = canvas.offsetWidth, h = 80;
+canvas.width  = w * dpr;
+canvas.height = h * dpr;
+const ctx = canvas.getContext(‘2d’);
+ctx.scale(dpr, dpr);
+
+const pts = spark7d;
+if (pts.length < 2) return;
+
+const pad = { t:8, b:8, l:2, r:2 };
+const mn = Math.min(…pts), mx = Math.max(…pts);
+const xOf = i => pad.l + i * (w - pad.l - pad.r) / (pts.length - 1);
+const yOf = v => pad.t + (1 - (v - mn) / (mx - mn)) * (h - pad.t - pad.b);
+const up  = pts[pts.length-1] >= pts[0];
+const col = up ? ‘#30d158’ : ‘#ff453a’;
+
+// Fill gradient
+const grad = ctx.createLinearGradient(0, 0, 0, h);
+grad.addColorStop(0, up ? ‘rgba(48,209,88,0.22)’ : ‘rgba(255,69,58,0.22)’);
+grad.addColorStop(1, ‘rgba(0,0,0,0)’);
+
+function drawCurve() {
+ctx.moveTo(xOf(0), yOf(pts[0]));
+for (let i = 1; i < pts.length; i++) {
+const cx = (xOf(i-1) + xOf(i)) / 2;
+ctx.bezierCurveTo(cx, yOf(pts[i-1]), cx, yOf(pts[i]), xOf(i), yOf(pts[i]));
+}
+}
+
+ctx.beginPath();
+drawCurve();
+ctx.lineTo(xOf(pts.length-1), h);
+ctx.lineTo(xOf(0), h);
+ctx.closePath();
+ctx.fillStyle = grad;
+ctx.fill();
+
+ctx.beginPath();
+drawCurve();
+ctx.strokeStyle = col;
+ctx.lineWidth   = 2.5;
+ctx.lineJoin    = ‘round’;
+ctx.stroke();
+
+ctx.beginPath();
+ctx.arc(xOf(pts.length-1), yOf(pts[pts.length-1]), 4, 0, Math.PI*2);
+ctx.fillStyle = col;
+ctx.fill();
+}
+
+// ── Portfolio ────────────────────────────────────────────────────
+function savePortfolio() {
+const amt = parseFloat(document.getElementById(‘amount’).value);
+const buy = parseFloat(document.getElementById(‘buy-price’).value);
+if (!amt || !buy) return;
+S.set(‘portfolio’, { amt, buy });
+calcPnl();
+}
+
+function calcPnl() {
+const p = S.get(‘portfolio’);
+if (!p || !priceUSD) return;
+const { amt, buy } = p;
+document.getElementById(‘amount’).value    = amt;
+document.getElementById(‘buy-price’).value = buy;
+const pnl    = (priceUSD - buy) * amt;
+const pnlPct = ((pnl / (buy * amt)) * 100).toFixed(2);
+const box    = document.getElementById(‘pnl’);
+box.style.display = ‘block’;
+box.className = ’pnl-box ’ + (pnl > 0 ? ‘profit’ : pnl < 0 ? ‘loss’ : ‘neutral’);
+const sign = pnl >= 0 ? ‘+’ : ‘’;
+document.getElementById(‘pnl-val’).textContent =
+`${amt} BTC — ${sign}${fmtPrice(pnl)} (${sign}${pnlPct}%)`;
+}
+
+// ── Alarmy ───────────────────────────────────────────────────────
+function addAlert() {
+const val = parseFloat(document.getElementById(‘alert-input’).value);
+if (!val) return;
+alerts.push({ price: val, triggered: false, id: Date.now() });
+S.set(‘alerts’, alerts);
+document.getElementById(‘alert-input’).value = ‘’;
+renderAlerts();
+}
+
+function deleteAlert(id) {
+alerts = alerts.filter(a => a.id !== id);
+S.set(‘alerts’, alerts);
+renderAlerts();
+}
+
+function renderAlerts() {
+const list = document.getElementById(‘alerts-list’);
+if (!alerts.length) { list.innerHTML = ‘<div class="empty-state">Žádné alarmy</div>’; return; }
+list.innerHTML = alerts.map(a => ` <div class="alert-item"> <span> <span class="alert-price">${fmtPrice(a.price)}</span> <span class="alert-dir">${a.price > priceUSD ? '↑ nad tímto' : '↓ pod tímto'}</span> ${a.triggered ? '<span class="alert-triggered">✓ Aktivován</span>' : ''} </span> <button class="delete-btn" onclick="deleteAlert(${a.id})">✕</button> </div>`).join(’’);
+}
+
+function checkAlerts() {
+let changed = false;
+alerts.forEach(a => {
+if (!a.triggered && Math.abs(priceUSD - a.price) / a.price < 0.015) {
+a.triggered = true; changed = true;
+if (Notification.permission === ‘granted’)
+new Notification(`₿ BTC dosáhl ${fmtPrice(a.price)}!`, { body: `Aktuální: ${fmtPrice(priceUSD)}` });
+}
+});
+if (changed) { S.set(‘alerts’, alerts); renderAlerts(); }
+}
+
+// ── Poznámky ─────────────────────────────────────────────────────
+function saveNotes() { S.set(‘notes’, document.getElementById(‘notes’).value); }
+function loadNotes()  { const n = S.get(‘notes’); if (n) document.getElementById(‘notes’).value = n; }
+
+window.addEventListener(‘resize’, drawSpark);
+
+// ── Init ─────────────────────────────────────────────────────────
+(async () => {
+syncTabs();
+loadNotes();
+renderAlerts();
+await fetchRates();
+await Promise.all([loadPrice(), loadSpark()]);
+setInterval(loadPrice, 60000);
+setInterval(loadSpark, 300000);
+})();
+</script>
+
+</body>
+</html>
